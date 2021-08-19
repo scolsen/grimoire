@@ -1,0 +1,8 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(load "../../grimoire.carp")
+
+(grim-do
+  (let-do [frame (Grimoire.Components.Frame.new 40 40 2 2 @"" true)]
+    (Grimoire.Component.render &frame)
+    (ignore (Grimoire.Component.get-input &frame))))
