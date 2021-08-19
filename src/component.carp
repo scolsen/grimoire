@@ -95,7 +95,7 @@
 
   (doc get-input "")
   (defn get-input [view]
-    (from-int (wgetch @(Grimoire.Component.window view))))
+    (the Char (from-int (wgetch @(Grimoire.Component.window view)))))
 
   (doc act "")
   (defn act [char view]
