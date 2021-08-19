@@ -1,0 +1,104 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "box-drawing.carp")
+
+(use NCurses)
+
+(defmodule Grimoire
+  (doc Component
+    "Defines a set of graphical elements to be rendered on screen.")
+  (deftype (Component d t)
+    [window (Ptr WINDOW) origin-x Int origin-y Int data d
+     draw (Fn [(Ptr WINDOW) &d] ()) update (Fn [&d] d)
+     behavior (Fn [Char &(Grimoire.Component d t)] ())])
+
+  (doc Style
+    "Defines a style for a component."
+    "Styles specify borders and background colors for components.")
+  (deftype Style [left-side WideChar right-side WideChar
+                  top-side WideChar bottom-side WideChar
+                  top-left WideChar top-right WideChar
+                  bottom-left WideChar bottom-right WideChar])
+
+  (hidden set-border)
+  (defmacro set-border [window ls rs ts bs tl tr bl br]
+    (list 'wborder-set window
+      (list 'address (list 'ref ls))
+      (list 'address (list 'ref rs))
+      (list 'address (list 'ref ts))
+      (list 'address (list 'ref bs))
+      (list 'address (list 'ref tl))
+      (list 'address (list 'ref tr))
+      (list 'address (list 'ref bl))
+      (list 'address (list 'ref br))))
+
+  (doc component
+    ("Defines a new component, with the given width, height, " false)
+    "x and y positions, and data.")
+  (defmacro component [tag width height x y data]
+    (list 'the (list 'Grimoire.Component 'd tag)
+          (list 'Grimoire.Component.init (list 'newwin height width y x) x y
+                data '(fn [a b] ()) 'copy '(fn [c v] ()))))
+)
+
+(defmodule Grimoire
+  (defmodule Style
+    (doc new "Defines a new component style.")
+    (defn new []
+      (Grimoire.Style.init
+        (vertical-light A_NORMAL)
+        (vertical-light A_NORMAL)
+        (horizontal-light A_NORMAL)
+        (horizontal-light A_NORMAL)
+        (tl-light A_NORMAL)
+        (tr-light A_NORMAL)
+        (bl-light A_NORMAL)
+        (br-light A_NORMAL)))
+
+    (doc set "Sets the style of a given component")
+    (defn set [view style]
+      (let-do [win @(Grimoire.Component.window view)]
+        (ignore (set-border win
+          @(Grimoire.Style.left-side style)
+          @(Grimoire.Style.right-side style)
+          @(Grimoire.Style.top-side style)
+          @(Grimoire.Style.bottom-side style)
+          @(Grimoire.Style.top-left style)
+          @(Grimoire.Style.top-right style)
+          @(Grimoire.Style.bottom-left style)
+          @(Grimoire.Style.bottom-right style)))
+        (Grimoire.Component.set-window! view win)))
+  )
+)
+
+(defmodule Grimoire
+  (defmodule Component
+    (doc render
+      ("Render writes a component to the screen by calling its `draw` " false)
+      " and `update` functions.")
+    (defn render [view]
+      (let-do [win @(Grimoire.Component.window view)
+               dat (Grimoire.Component.data view)
+               origin-x (getx @(Grimoire.Component.window view))
+               origin-y (gety @(Grimoire.Component.window view))]
+        (Grimoire.Component.set-data! view (~(Grimoire.Component.update view) dat))
+        (~(Grimoire.Component.draw view) win (Grimoire.Component.data view))
+        (ignore (wmove win origin-y origin-x))
+        (wrefresh win)))
+
+  (doc listen
+    ("Listen waits for input to the given component, executing the " false)
+    "component's `behavior` on the input when recieved.")
+  (defn listen [view]
+    (~(Grimoire.Component.behavior view)
+      (from-int (wgetch @(Grimoire.Component.window view)))
+      view))
+
+  (doc get-input "")
+  (defn get-input [view]
+    (from-int (wgetch @(Grimoire.Component.window view))))
+
+  (doc act "")
+  (defn act [char view]
+    (~(Grimoire.Component.behavior view) char view))
+  )
+)
