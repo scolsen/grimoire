@@ -1,0 +1,33 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(load "../box-drawing.carp")
+(load "../component.carp")
+
+(defmodule Grimoire
+  (defmodule Components
+    (defmodule Frame
+      (doc new 
+        ("Builds a new frame style component with the specified " false)
+        "width, height, x position, y position, and data."
+        ""
+        "Frames are simple bordered regions.")
+      (defn new [w h x y data rounded?]
+        (let-do [view (Grimoire.component Frame w h x y data)
+                 style (=> (Grimoire.Style.new)
+                           (Grimoire.Style.set-top-left (if rounded? 
+                                                   (tl-arc A_NORMAL) 
+                                                   (tl-light A_NORMAL)))
+                           (Grimoire.Style.set-top-right (if rounded? 
+                                                    (tr-arc A_NORMAL) 
+                                                    (tr-light A_NORMAL)))
+                           (Grimoire.Style.set-bottom-left (if rounded? 
+                                                      (bl-arc A_NORMAL) 
+                                                      (bl-light A_NORMAL)))
+                           (Grimoire.Style.set-bottom-right (if rounded? 
+                                                       (br-arc A_NORMAL) 
+                                                       (br-light A_NORMAL))))]
+          (Grimoire.Style.set &view &style)
+          view))
+    )
+  )
+)
