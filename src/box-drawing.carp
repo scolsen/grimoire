@@ -1,0 +1,455 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(use NCurses)
+
+;; Grimoire box drawing functions.
+(defmodule Grimoire
+  (doc LineWeight
+    "Specifies the thickness of a box drawing character.")
+  (deftype LineWeight Light Heavy None)
+
+  (doc LineMode
+    "Specifies the variant of a box drawing character.")
+  (deftype LineMode Single Double DoubleDash TripleDash QuadDash)
+
+  (doc BoxDrawing
+    "Defines routines for specifying unicode box drawing characters.")
+  (defmodule BoxDrawing
+    (hidden weight-eq)
+    (defn weight-eq [w w1]
+      (match w
+        (LineWeight.Light) (match w1 (LineWeight.Light) true _ false)
+        (LineWeight.Heavy) (match w1 (LineWeight.Heavy) true _ false)
+        (LineWeight.None) (match w1 (LineWeight.None) true _ false)))
+    (implements = weight-eq)
+
+    (hidden mode-eq)
+    (defn mode-eq [m m1]
+      (match m
+        (LineMode.Single)     (match m1 (LineMode.Single) true _ false)
+        (LineMode.Double)     (match m1 (LineMode.Double) true _ false)
+        (LineMode.DoubleDash) (match m1 (LineMode.DoubleDash) true _ false)
+        (LineMode.TripleDash) (match m1 (LineMode.TripleDash) true _ false)
+        (LineMode.QuadDash)   (match m1 (LineMode.QuadDash) true _ false)))
+    (implements = mode-eq)
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Corners
+
+    (doc tl-corner
+      ("Returns a top-left corner character according to the specified " false)
+      "weights line mode and NCurses attribute.")
+    (defn tl-corner [bw rw mode attr]
+      (let [char (cond
+        (and (= @&bw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╔" _  @"┌")
+        (and (= @&bw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╔" _  @"┏")
+        (and  (= @&bw (LineWeight.Light)) (= @&rw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╒" _ @"┍")
+        (and  (= @&bw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╓" _ @"┎")
+        @"┌")]
+        (widechar attr char)))
+
+    (doc tl-light
+      "Shorthand for a light-weight top-left single line corner.")
+    (defn tl-light [attr]
+      (tl-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Single) attr))
+
+    (doc tl-heavy
+      "Shorthand for a heavy-weight top-left single line corner.")
+    (defn tl-heavy [attr]
+      (tl-corner (LineWeight.Heavy) (LineWeight.Heavy) (LineMode.Single) attr))
+
+    (doc tl-double
+      "Shorthand for a top-left double line corner.")
+    (defn tl-double [attr]
+      (tl-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Double) attr))
+
+    (doc tr-corner
+      ("Returns a top-right corner character according to the specified " false)
+      "weights line mode and NCurses attribute.")
+    (defn tr-corner [bw lw mode attr]
+      (let [char (cond
+        (and (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╗" _  @"┐")
+        (and (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╗" _  @"┓")
+        (and  (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╕" _ @"┑")
+        (and  (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╖" _ @"┒")
+        @"┐")]
+        (widechar attr char)))
+
+    (doc tr-light
+      "Shorthand for a light-weight top-right single line corner.")
+    (defn tr-light [attr]
+      (tr-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Single) attr))
+
+    (doc tr-heavy
+      "Shorthand for a heavy-weight top-right single line corner.")
+    (defn tr-heavy [attr]
+      (tr-corner (LineWeight.Heavy) (LineWeight.Heavy) (LineMode.Single) attr))
+
+    (doc tr-double
+      "Shorthand for a top-right double line corner.")
+    (defn tr-double [attr]
+      (tr-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Double) attr))
+
+    (doc br-corner
+      ("Returns a bottom-right corner character according to the specified " false)
+      "weights line mode and NCurses attribute.")
+    (defn br-corner [tw lw mode attr]
+      (let [char (cond
+        (and (= @&tw (LineWeight.Light)) (= @&lw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╝" _  @"┘")
+        (and (= @&tw (LineWeight.Heavy)) (= @&lw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╝" _  @"┛")
+        (and  (= @&tw (LineWeight.Light)) (= @&lw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╛" _ @"┙")
+        (and  (= @&tw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╜" _ @"┚")
+        @"┘")]
+        (widechar attr char)))
+
+    (doc br-light
+      "Shorthand for a light-weight bottom-right single line corner.")
+    (defn br-light [attr]
+      (br-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Single) attr))
+
+    (doc br-heavy
+      "Shorthand for a heavy-weight bottom-right single line corner.")
+    (defn br-heavy [attr]
+      (br-corner (LineWeight.Heavy) (LineWeight.Heavy) (LineMode.Single) attr))
+
+    (doc br-double
+      "Shorthand for a bottom-right double line corner.")
+    (defn br-double [attr]
+      (br-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Double) attr))
+
+    (doc bl-corner
+      ("Returns a bottom-left corner character according to the specified " false)
+      "weights, line mode, and NCurses attribute.")
+    (defn bl-corner [tw rw mode attr]
+      (let [char (cond
+        (and (= @&tw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╚" _  @"└")
+        (and (= @&tw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╚" _  @"┗")
+        (and  (= @&tw (LineWeight.Light)) (= @&rw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╘" _ @"┕")
+        (and  (= @&tw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╙" _ @"┖")
+        @"└")]
+        (widechar attr char)))
+
+    (doc bl-light
+      "Shorthand for a light-weight bottom-left single line corner.")
+    (defn bl-light [attr]
+      (bl-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Single) attr))
+
+    (doc bl-heavy
+      "Shorthand for a heavy-weight bottom-left single line corner.")
+    (defn bl-heavy [attr]
+      (bl-corner (LineWeight.Heavy) (LineWeight.Heavy) (LineMode.Single) attr))
+
+    (doc bl-double
+      "Shorthand for a bottom-left double line corner.")
+    (defn bl-double [attr]
+      (bl-corner (LineWeight.Light) (LineWeight.Light) (LineMode.Double) attr))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Tacks
+
+    (doc top-tack
+      ("Returns a top row tack character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn top-tack [bw lw rw mode attr]
+      (let [char (cond
+        (and (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╦" _ @"┬")
+        (and (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Heavy)) (= @&rw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╦" _ @"┳")
+        (and (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Heavy)) (= @&rw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╤" _ @"┯")
+        (and (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╥" _ @"┰")
+        (and (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Light)) (= @&rw
+        (LineWeight.Heavy)))
+          @"┮"
+        (and (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          @"┱"
+        (and (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)) (= @&rw
+        (LineWeight.Heavy)))
+          @"┲"
+        (and (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          @"┭"
+        @"┬")]
+        (widechar attr char)))
+
+    (doc bottom-tack
+      ("Returns a bottom row tack character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn bottom-tack [tw lw rw mode attr]
+      (let [char (cond
+        (and (= @&tw (LineWeight.Light)) (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╩" _ @"┴")
+        (and (= @&tw (LineWeight.Heavy)) (= @&lw (LineWeight.Heavy)) (= @&rw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╩" _ @"┻")
+        (and (= @&tw (LineWeight.Light)) (= @&lw (LineWeight.Heavy)) (= @&rw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╧" _ @"┷")
+        (and (= @&tw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╨" _ @"┸")
+        (and (= @&tw (LineWeight.Light)) (= @&lw (LineWeight.Light)) (= @&rw
+        (LineWeight.Heavy)))
+          @"┶"
+        (and (= @&tw (LineWeight.Heavy)) (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          @"┹"
+        (and (= @&tw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)) (= @&rw
+        (LineWeight.Heavy)))
+          @"┺"
+        (and (= @&tw (LineWeight.Light)) (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          @"┵"
+        @"┴")]
+        (widechar attr char)))
+
+    (doc left-tack
+      ("Returns a left row tack character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn left-tack [tw bw rw mode attr]
+      (let [char (cond
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╠" _ @"├")
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)) (= @&rw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╠" _ @"┣")
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)) (= @&rw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╞" _ @"┝")
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╟" _ @"┠")
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)) (= @&rw
+        (LineWeight.Heavy)))
+          @"┡"
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+          @"┟"
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)) (= @&rw
+        (LineWeight.Light)))
+          @"┞"
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)) (= @&rw
+        (LineWeight.Heavy)))
+          @"┢"
+        @"├")]
+        (widechar attr char)))
+
+    (doc right-tack
+      ("Returns a right row tack character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn right-tack [tw bw lw mode attr]
+      (let [char (cond
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)) (= @&lw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╣" _ @"┤")
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)) (= @&lw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╣" _ @"┫")
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)) (= @&lw
+        (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╡" _ @"┥")
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╢" _ @"┨")
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)) (= @&lw
+        (LineWeight.Heavy)))
+          @"┩"
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)) (= @&lw (LineWeight.Light)))
+          @"┧"
+        (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)) (= @&lw
+        (LineWeight.Light)))
+          @"┦"
+        (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)) (= @&lw
+        (LineWeight.Heavy)))
+          @"┪"
+        @"┤")]
+        (widechar attr char)))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Lines
+
+    (doc cross
+      ("Returns a cross line character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn cross [lw rw tw bw mode attr]
+      (let [char (cond
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╬" _ @"┼")
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╬" _ @"╋")
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)))
+          (match mode (LineMode.Double) @"╪" _ @"┿")
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)))
+          (match mode (LineMode.Double) @"╫" _ @"╂")
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)))
+          @"┽"
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)))
+          @"╀"
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)))
+          @"╁"
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)))
+          @"┾"
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)))
+          @"╆"
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)))
+          @"╈"
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)))
+          @"╇"
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)))
+          @"╅"
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)))
+          @"╄"
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)))
+          @"╉"
+        (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Heavy))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)))
+          @"╊"
+        (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light))
+             (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)))
+          @"╃"
+        @"┼")]
+        (widechar attr char)))
+
+    (doc vertical-line
+      ("Returns a vertical line character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn vertical-line [tw bw mode attr]
+      (let [char (match mode
+        (LineMode.Double)
+          @"║"
+        (LineMode.DoubleDash)
+          (if (or (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy))) @"╏" @"╎" )
+        (LineMode.TripleDash)
+          (if (or (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy))) @"┇" @"┆" )
+        (LineMode.QuadDash)
+          (if (or (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy))) @"┋" @"┊" )
+        _ (cond (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Light)))
+                  @"│"
+                (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Heavy)))
+                  @"┃"
+                (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.Heavy)))
+                  @"╽"
+                (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.Light)))
+                  @"╿"
+                (and (= @&tw (LineWeight.None)) (= @&bw (LineWeight.Light)))
+                  @"╷"
+                (and (= @&tw (LineWeight.None)) (= @&bw (LineWeight.Heavy)))
+                  @"╻"
+                (and (= @&tw (LineWeight.Light)) (= @&bw (LineWeight.None)))
+                  @"╵"
+                (and (= @&tw (LineWeight.Heavy)) (= @&bw (LineWeight.None)))
+                  @"╹"
+                @"│"))]
+        (widechar attr char)))
+
+    (doc horizontal-line
+      ("Returns a horizontal line character, according to the given " false)
+      "line weights, line mode, and NCurses attribute.")
+    (defn horizontal-line [lw rw mode attr]
+      (let [char (match mode
+        (LineMode.Double)
+          @"═"
+        (LineMode.DoubleDash)
+          (if (or (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))) @"╍" @"╌" )
+        (LineMode.TripleDash)
+          (if (or (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))) @"┅" @"┄" )
+        (LineMode.QuadDash)
+          (if (or (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy))) @"┉" @"┈" )
+        _ (cond (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Light)))
+                  @"─"
+                (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Heavy)))
+                  @"━"
+                (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.Heavy)))
+                  @"╼"
+                (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.Light)))
+                  @"╾"
+                (and (= @&lw (LineWeight.None)) (= @&rw (LineWeight.Light)))
+                  @"╶"
+                (and (= @&lw (LineWeight.None)) (= @&rw (LineWeight.Heavy)))
+                  @"╺"
+                (and (= @&lw (LineWeight.Light)) (= @&rw (LineWeight.None)))
+                  @"╴"
+                (and (= @&lw (LineWeight.Heavy)) (= @&rw (LineWeight.None)))
+                  @"╸"
+                @"─"))]
+        (widechar attr char)))
+
+    (doc vertical-dash
+      "Returns a double dashed vertical line with the given NCurses attribute.")
+    (defn vertical-dash [attr]
+      (vertical-line (LineWeight.Light) (LineWeight.Light)
+                     (LineMode.DoubleDash) attr))
+
+    (doc vertical-light
+      "Returns a light single vertical line with the given NCurses attribute.")
+    (defn vertical-light [attr]
+      (vertical-line (LineWeight.Light) (LineWeight.Light)
+                     (LineMode.Single) attr))
+
+    (doc horizontal-light
+      "Returns a light single horizontal line with the given NCurses attribute.")
+    (defn horizontal-light [attr]
+      (horizontal-line (LineWeight.Light) (LineWeight.Light)
+                       (LineMode.Single) attr))
+
+    (doc horizontal-dash
+      "Returns a double dashed horizontal line with the given NCurses attribute.")
+    (defn horizontal-dash [attr]
+      (horizontal-line (LineWeight.Light) (LineWeight.Light)
+                       (LineMode.DoubleDash) attr))
+
+    (doc horizontal-line
+      ("Returns a diagonal line character, according to the given " false)
+      "line weights and NCurses attribute.")
+    (defn diagonal [lw rw attr]
+      (let [char (cond
+        (= @&lw (LineWeight.None))
+          @"╲"
+        (= @&rw (LineWeight.None))
+          @"╱"
+        @"╳")]
+        (widechar attr char)))
+
+    (doc tr-arc
+      "Returns an arced top-right corner with the given NCurses attribute.")
+    (defn tr-arc [attr] (widechar attr @"╮"))
+
+    (doc tl-arc
+      "Returns an arced top-left corner with the given NCurses attribute.")
+    (defn tl-arc [attr] (widechar attr @"╭"))
+
+    (doc bl-arc
+      "Returns an arced bottom-left corner with the given NCurses attribute.")
+    (defn bl-arc [attr] (widechar attr @"╰"))
+
+    (doc br-arc
+      "Returns an arced bottom-right corner with the given NCurses attribute.")
+    (defn br-arc [attr] (widechar attr @"╯"))
+  )
+)
