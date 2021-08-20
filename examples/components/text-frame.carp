@@ -1,0 +1,9 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(load "../../grimoire.carp")
+
+(grim-do
+  (let-do [text-frame (Grimoire.Components.TextFrame.new 40 40 2 2 
+    @"It's dangerous to go alone, take this." true)]
+    (Grimoire.Component.render &text-frame)
+    (ignore (Grimoire.Component.get-input &text-frame))))

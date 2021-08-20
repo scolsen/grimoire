@@ -3,6 +3,7 @@
 (load "src/box-drawing.carp")
 (load "src/component.carp")
 (load "src/components/frame.carp")
+(load "src/components/text-frame.carp")
 
 (defmodule Grimoire
   (defn start []

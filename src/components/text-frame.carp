@@ -1,0 +1,27 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(load "../component.carp")
+(load "frame.carp")
+
+(defmodule Grimoire
+  (defmodule Components
+    (defmodule TextFrame
+      (hidden draw-text)
+      (defn draw-text [window data]
+        ;; no need to return the subwindow. It shares memory with window.
+        (let-do [w (derwin window (- (wgetmaxy window) 2)
+                                  (- (wgetmaxx window) 2)
+                                  1 1)]
+          (ignore (mvwaddstr w 0 0 @data))
+          (ignore (touchwin window))))
+
+      (doc new
+        "Builds a new text-frame style component, a frame that contains some
+        textual data.")
+      (defn new [w h x y data rounded?]
+        (let-do [base (Grimoire.Components.Frame.new w h x y data rounded?)]
+          (Component.set-draw! &base draw-text)
+          base))
+    )
+  )
+)
