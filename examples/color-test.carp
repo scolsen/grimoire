@@ -1,0 +1,63 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "grimoire.carp")
+(load "src/color/color.carp")
+(load "src/color/palette.carp")
+(load "src/ctrl.carp")
+
+(use NCurses)
+
+(defn show-colors [colors]
+  (let [norm A_NORMAL]
+  (for [i 0 (Array.length colors)]
+    (ignore-do (Grimoire.Color.on (Array.unsafe-nth colors i))
+               (addch (chtype \space))
+               (Grimoire.Color.off)))))
+
+(defn main []
+  (do 
+    (Grimoire.ignore-do 
+        (initscr)
+        (noecho)
+        (start-color)
+        (Grimoire.addstrln* "COLORS: " COLORS)
+        (Grimoire.addstrln* "COLOR_PAIRS: " COLOR_PAIRS)
+        (Grimoire.addstrln* "Has colors: " (has-colors))
+        (Grimoire.addstrln* "Can change colors: " (can-change-color))
+        (Grimoire.addstrln* "Standard colors: "))
+    (let-do [eights &(Grimoire.Color.solids &Grimoire.Palette.eight)
+             sixteen &(Grimoire.Color.solids &Grimoire.Palette.system)
+             xt &(Grimoire.Color.solids &Grimoire.Palette.xterm)
+             r &(Grimoire.Color.solids &Grimoire.Palette.red)
+             g &(Grimoire.Color.solids &Grimoire.Palette.green)
+             b &(Grimoire.Color.solids &Grimoire.Palette.blue)
+             p &(Grimoire.Color.solids &Grimoire.Palette.primary)
+             reversed &(Grimoire.Palette.from-array
+             (Array.reverse @(Grimoire.Palette.codes &Grimoire.Palette.xterm)))]
+      (show-colors eights)
+      (ignore (Grimoire.addstrln* ""))
+      (ignore (Grimoire.addstrln @"16 Colors: "))
+      (show-colors sixteen)
+      (ignore (Grimoire.addstrln @""))
+      (ignore (Grimoire.addstrln @"256 Colors: "))
+      (show-colors xt)
+      (ignore (Grimoire.addstrln @""))
+      (ignore (Grimoire.addstrln @"Primary reds: "))
+      (show-colors r)
+      (ignore (Grimoire.addstrln @""))
+      (ignore (Grimoire.addstrln @"Primary greens: "))
+      (show-colors g)
+      (ignore (Grimoire.addstrln @""))
+      (ignore (Grimoire.addstrln @"Primary blues: "))
+      (show-colors b)
+      (ignore (Grimoire.addstrln @""))
+      (ignore (Grimoire.addstrln @"Primary colors: "))
+      (show-colors p)
+      (ignore (Grimoire.addstrln @""))
+      (ignore (Grimoire.addstrln @"Press any character to swap palettes."))
+      (ignore (refresh))
+      (ignore (getch))
+      (ignore (Grimoire.Color.swap! xt reversed &Grimoire.Color.solids))
+      (ignore (refresh))
+      (ignore (getch))
+      (endwin)))
+)

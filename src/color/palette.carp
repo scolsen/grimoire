@@ -1,0 +1,50 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "colormap.carp")
+
+(defmodule Grimoire
+  (doc
+    "Palettes are sets of color codes."
+    ""
+    "Use them with Grimoire's color routines to control color output.")
+  (deftype Palette [codes (Array Int) limit Int])
+
+  (defmodule Palette
+    (hidden init)
+
+    (doc linear
+      "Creates a new palette of a linear series of color codes.")
+    (defn linear [start limit]
+      (let [vals (Array.range-or-default start limit 1)]
+        (Grimoire.Palette.init vals (+ 1 limit))))
+
+    (doc from-array
+      "Creates a new palette from an array of Int.")
+    (defn from-array [arr]
+      (Grimoire.Palette.init arr (Array.length &arr)))
+
+    (todo get "Make this safe. Return a result.")
+    (doc get
+      "Retrieves the color code at a given position in a palette.")
+    (defn get [palette key]
+      (let [codes (Palette.codes palette)]
+        (if (> key (- (Array.length codes) 1))
+            (Array.unsafe-nth codes 0)
+            (Array.unsafe-nth codes key))))
+
+    ;; System Colors
+    (def eight     (linear 0 7))
+    (def system    (linear 0 15))
+    (def xterm     (linear 0 255))
+    (def grayscale (linear 232 255))
+
+    ;; Primary Colors
+    (def reds [1 9 52 88 124 160 196])
+    (def blues [2 10 22 28 34 40 46])
+    (def greens [4 12 17 18 19 20 21])
+    (def prim    (Array.concat &[@&reds @&greens @&blues]))
+    (def red     (from-array @&reds))
+    (def green   (from-array @&greens))
+    (def blue    (from-array @&blues))
+    (def primary (from-array @&prim))
+  )
+)

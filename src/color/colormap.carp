@@ -1,0 +1,25 @@
+(load "xterm-colormap.carp")
+(load "rgb.carp")
+
+(defmodule Grimoire
+  (defmodule ColorMap
+    (defmacro xterm [] 'xterm-hexmap)
+    (doc to-hex
+      ("Converts a color code to a hex value, according to the provided " false)
+      "colormap.")
+    (sig to-hex (Fn [Int &(Map Int Int)] Int))
+    (defn to-hex [color-code hexmap]
+      (Map.get hexmap &color-code))
+
+    (doc to-rgb
+      ("Converts a color code to an RGB value according to the provided " false)
+      "colormap.")
+    (sig to-rgb (Fn [Int &(Map Int Int)] Grimoire.RGB))
+    (defn to-rgb [color-code hexmap]
+      (let [hex   (to-hex color-code hexmap)
+            red   (bit-and (bit-shift-right hex 16) 0xff)
+            green (bit-and (bit-shift-right hex 8) 0xff)
+            blue  (bit-and hex 0xff)]
+        (Grimoire.RGB.init red green blue)))
+  )
+)
