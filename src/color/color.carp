@@ -43,32 +43,26 @@
     (defmacro max-identifier [] '(dec NCurses.COLOR_PAIRS))
 
     (doc new "Initializes a new color.")
-    (defn new [palette fg-key bg-key]
+    (defn new [fg-code bg-code]
       (if (> (inc next-identifier) (max-identifier))
           (Result.Error @"Maximum number of color pairs allocated.")
-          (let [fg-code @(Grimoire.Palette.get palette fg-key)
-                bg-code @(Grimoire.Palette.get palette bg-key)
-                ok? (init-extended-pair next-identifier
-                                        fg-code
-                                        bg-code)]
+          (let [ ok? (init-extended-pair next-identifier fg-code bg-code)]
             (if (= ok? NCurses.OK)
                 (let-do [id next-identifier]
                   (set! next-identifier (inc next-identifier))
                   (Result.Success (Grimoire.Color id fg-code bg-code true)))
                 (Result.Error @"Failed to initialize color.")))))
 
+    (doc from-palette 
+      "Initializes a new color using color codes from the given palette.")
+    (defn from-palette [palette fg-key bg-key]
+      (let [fg-code @(Grimoire.Palette.get palette fg-key)
+            bg-code @(Grimoire.Palette.get palette bg-key)]
+        (new fg-code bg-code)))
+
     (doc solid "Initializes a solid color.")
     (defn solid [color-code]
-      (if (> (inc next-identifier) (max-identifier))
-          (Result.Error @"Maximum number of color pairs allocated.")
-          (let [ok? (init-extended-pair next-identifier
-                                        color-code
-                                        color-code)]
-            (if (= ok? NCurses.OK)
-                (let-do [id next-identifier]
-                  (set! next-identifier (inc next-identifier))
-                  (Result.Success (Grimoire.Color id color-code color-code true)))
-                (Result.Error @"Failed to initialize color.")))))
+      (new color-code color-code))
 
     (doc solids "Initialize a solid color for each code in a Palette.")
     (defn solids [palette]
