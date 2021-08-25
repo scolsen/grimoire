@@ -42,6 +42,28 @@
     (hidden max-identifier)
     (defmacro max-identifier [] '(dec NCurses.COLOR_PAIRS))
 
+    (doc = 
+      "Returns true if two colors are equal."
+      "Equality is only based on the id field.")
+    (defn = [color other]
+      (= @(Grimoire.Color.id color) @(Grimoire.Color.id other)))
+    (implements = =)
+
+    (doc get 
+      "Retrieves the color assigned to the given color id."
+      ("If a color with the given id hasn't been initialized yet, " false)
+      "returns a default color value with foreground and background set to 0.")
+    (defn get [id]
+      (let-do [fg*   (Pointer.unsafe-alloc 0)
+               bg*   (Pointer.unsafe-alloc 0)
+               color (Grimoire.Color.init id 0 0 true)]
+        (when (= NCurses.OK (extended-pair-content id fg* bg*))
+          (do (Grimoire.Color.set-fg! &color (to-value fg*))
+              (Grimoire.Color.set-bg! &color (to-value bg*))))
+        (Pointer.free fg*)
+        (Pointer.free bg*)
+        color))
+
     (doc new "Initializes a new color.")
     (defn new [fg-code bg-code]
       (if (> (inc next-identifier) (max-identifier))
