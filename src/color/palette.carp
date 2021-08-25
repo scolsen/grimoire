@@ -2,9 +2,8 @@
 (load "colormap.carp")
 
 (defmodule Grimoire
-  (doc
+  (doc Palette
     "Palettes are sets of color codes."
-    ""
     "Use them with Grimoire's color routines to control color output.")
   (deftype Palette [codes (Array Int) limit Int])
 
