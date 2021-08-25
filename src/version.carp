@@ -1,0 +1,13 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "git@github.com:carpentry-org/semver@0.0.6")
+
+(defmodule Grimoire
+  (doc ncurses-version
+    "A Semantic Version wrapping the current ncurses lib version."
+    "Can be used to check for extension compatibility.")
+  (def ncurses-version
+    (Semver (NCurses.version-major)
+            (NCurses.version-minor)
+            (NCurses.version-patch)
+            (Maybe.Nothing)))
+)
