@@ -1,0 +1,27 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(load "Test.carp")
+(load "../src/color/color.carp")
+
+(use Test)
+
+(deftest test
+  (assert-success test
+    &(do (ignore (initscr))
+         (ignore (start-color))
+         (set! extended-colors? true)
+         (for [i 0 256]
+           (ignore (Grimoire.Color.new 0 0)))
+         (let-do [result (Grimoire.Color.new 0 0)]
+           (ignore (endwin))
+           result))
+    "More than 256 colors may be assigned when extended color is supported.")
+  (assert-error test
+    &(do (ignore (initscr))
+         (ignore (start-color))
+         (set! extended-colors? false)
+         (let-do [result (Grimoire.new 0 0)]
+           (ignore (endwin))
+           result))
+    "More than 256 colors may not be assigned when extended color is not supported.")
+)
