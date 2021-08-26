@@ -1,0 +1,43 @@
+;; N.B. Coloring in NCurses is a bit nuanced for compatibility reasons.
+;; If a terminal only supports 256 colors and 256 pairs, we can just use
+;; attron and init-pair to set and specify colors.
+;;
+;; All other terminals need to use fields larger than shorts to store more
+;; colors. For example, screen256 supports a greater number of pairs.
+;; In this case, we need to use attr-set and init-extended-pair instead.
+;; attr-set expects the color to be set in the third field, a pointer to its
+;; id.
+;;
+;; the color extensions are only available in ncurses6.1 and greater.
+(load "git@github.com:carpentry-org/semver@0.0.6")
+(load "../version.carp")
+
+(defmodule Grimoire
+  (defmodule Color
+    (hidden ext-color-version)
+    (def ext-color-version (Semver 6 1 0 (Maybe.Nothing)))
+
+    (doc extended-colors?
+      ("Returns true if this version of ncurses supports extended color " false)
+      "routines.")
+    (def extended-colors? (>= &Grimoire.ncurses-version &ext-color-version))
+
+    ;; Why a macro? COLOR_PAIRS will return 0 until (start-color) is called.
+    ;; Evaluating the form now would likely result in an incorrect value.
+    ;; Using a macro lets us get the right value, after the user has called
+    ;; start-color
+    (defmacro max-identifier []
+      (list 'if 'extended-colors?
+                '(dec NCurses.COLOR_PAIRS)
+                '255))
+
+    (def next-identifier 1)
+
+    (defmacro compatible-pair [id fg bg]
+      (list  'if 'extended-colors?
+                 (list 'init-extended-pair id fg bg)
+                 (list 'init-pair (list 'from-int id)
+                                  (list 'from-int fg)
+                                  (list 'from-int bg))))
+  )
+)

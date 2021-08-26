@@ -1,6 +1,8 @@
 (load "git@github.com:scolsen/carp-ncurses@master")
 (load "colormap.carp")
 (load "palette.carp")
+(load "compatibility.carp")
+(load "../version.carp")
 
 (use NCurses)
 
@@ -9,54 +11,40 @@
     "Represents a color."
     "Each Color corresponds to an ncurses color pair."
     "Grimoire handles initializing and managing color pairs.")
-  (deftype Color [id Int fg Int bg Int extended? Bool])
+  (deftype Color [id Int fg Int bg Int])
 
-  ;; N.B. Coloring in NCurses is a bit nuanced for compatibility reasons.
-  ;; If a terminal only supports 256 colors and 256 pairs, we can just use
-  ;; attron and init-pair to set and specify colors.
-  ;;
-  ;; All other terminals need to use fields larger than shorts to store more
-  ;; colors. For example, screen256 supports a greater number of pairs.
-  ;; In this case, we need to use attr-set and init-extended-pair instead.
-  ;; attr-set expects the color to be set in the third field, a pointer to its
-  ;; id.
-  ;;
-  ;; the color extensions are only available in ncurses6.1 and greater.
-
-  ;; TODO: Reset identifiers on overflow.
-  ;; TODO: Add conditional logic for using extended pairs or not, based on
-  ;; NCURSES patch version.
   (defmodule Color
+    (hidden next-identifier) (hidden max-identifier)
+    (hidden compatible-pair)
+
     (hidden init) (hidden set-fg) (hidden set-bg)
     (hidden set-id) (hidden set-fg!) (hidden set-bg!)
     (hidden set-id!) (hidden fg) (hidden bg)
     (hidden id) (hidden update-id) (hidden update-fg) (hidden update-bg)
 
-    (hidden next-identifier)
-    (def next-identifier 1)
+    (doc new "Initializes a new color.")
+    (defn new [fg-code bg-code]
+      (if (> (inc next-identifier) (max-identifier))
+          (Result.Error @"Maximum number of color pairs allocated.")
+          (let [ok? (compatible-pair next-identifier fg-code bg-code)]
+            (if (= ok? NCurses.OK)
+                (let-do [id next-identifier]
+                  (set! next-identifier (inc next-identifier))
+                  (Result.Success (Grimoire.Color id fg-code bg-code)))
+                (Result.Error @"Failed to initialize color.")))))
 
-    ;; Why a macro? COLOR_PAIRS will return 0 until (start-color) is called.
-    ;; evaluating the form now would likely result in an incorrect value.
-    ;; Using a macro lets us get the right value, after the user has called
-    ;; start-color
-    (hidden max-identifier)
-    (defmacro max-identifier [] '(dec NCurses.COLOR_PAIRS))
-
-    (doc = 
+    (doc =
       "Returns true if two colors are equal."
       "Equality is only based on the id field.")
     (defn = [color other]
       (= @(Grimoire.Color.id color) @(Grimoire.Color.id other)))
     (implements = =)
 
-    (doc get 
-      "Retrieves the color assigned to the given color id."
-      ("If a color with the given id hasn't been initialized yet, " false)
-      "returns a default color value with foreground and background set to 0.")
-    (defn get [id]
+    (hidden get-extended) 
+    (defn get-extended [id]
       (let-do [fg*   (Pointer.unsafe-alloc 0)
                bg*   (Pointer.unsafe-alloc 0)
-               color (Grimoire.Color.init id 0 0 true)]
+               color (Grimoire.Color.init id 0 0)]
         (when (= NCurses.OK (extended-pair-content id fg* bg*))
           (do (Grimoire.Color.set-fg! &color (to-value fg*))
               (Grimoire.Color.set-bg! &color (to-value bg*))))
@@ -64,18 +52,28 @@
         (Pointer.free bg*)
         color))
 
-    (doc new "Initializes a new color.")
-    (defn new [fg-code bg-code]
-      (if (> (inc next-identifier) (max-identifier))
-          (Result.Error @"Maximum number of color pairs allocated.")
-          (let [ ok? (init-extended-pair next-identifier fg-code bg-code)]
-            (if (= ok? NCurses.OK)
-                (let-do [id next-identifier]
-                  (set! next-identifier (inc next-identifier))
-                  (Result.Success (Grimoire.Color id fg-code bg-code true)))
-                (Result.Error @"Failed to initialize color.")))))
+    (hidden get-pair)
+    (defn get-pair [id]
+      (let-do [fg*   (Pointer.unsafe-alloc (from-int 0))
+               bg*   (Pointer.unsafe-alloc (from-int 0))
+               color (Grimoire.Color.init id 0 0)]
+        (when (= NCurses.OK (pair-content (from-int id) fg* bg*))
+          (do (Grimoire.Color.set-fg! &color (to-int (to-value fg*)))
+              (Grimoire.Color.set-bg! &color (to-int (to-value bg*)))))
+        (Pointer.free fg*)
+        (Pointer.free bg*)
+        color))
 
-    (doc from-palette 
+    (doc get
+      "Retrieves the color assigned to the given color id."
+      ("If a color with the given id hasn't been initialized yet, " false)
+      "returns a default color value with foreground and background set to 0.")
+    (defn get [id]
+      (if extended-colors?
+        (get-extended id)
+        (get-pair id)))
+
+    (doc from-palette
       "Initializes a new color using color codes from the given palette.")
     (defn from-palette [palette fg-key bg-key]
       (let [fg-code @(Grimoire.Palette.get palette fg-key)
@@ -98,36 +96,37 @@
 
     (doc set-foreground "Sets the foreground value of a color.")
     (defn set-foreground! [color fg]
-      (let [code (init-extended-pair @(Grimoire.Color.id &color)
-                                     fg
-                                     @(Grimoire.Color.bg &color))]
+      (let [code (compatible-pair @(Grimoire.Color.id &color)
+                                  fg
+                                  @(Grimoire.Color.bg &color))]
       (if (= code NCurses.OK)
           (Result.Success (set-fg color fg))
           (Result.Error @"Couldn't update foreground."))))
 
     (doc set-background "Sets the background value of a color.")
     (defn set-background! [color bg]
-      (let [code (init-extended-pair @(Grimoire.Color.id &color)
-                                     @(Grimoire.Color.fg &color)
-                                     bg)]
+      (let [code (compatible-pair @(Grimoire.Color.id &color)
+                                  @(Grimoire.Color.fg &color)
+                                  bg)]
         (if (= code NCurses.OK)
             (Result.Success (set-bg color bg))
             (Result.Error @"Couldn't update background."))))
 
-    (doc update ("Updates the foreground and background of a color " false)
-                "using the functions f and g, respectively.")
+    (doc update 
+      ("Updates the foreground and background of a color " false)
+      "using the functions f and g, respectively.")
     (defn update [color f g]
       (let [fg (~f @(Grimoire.Color.fg &color))
             bg (~g @(Grimoire.Color.bg &color))
-            code (init-extended-pair @(Grimoire.Color.id &color)
-                                     fg
-                                     bg)]
+            code (compatible-pair @(Grimoire.Color.id &color)
+                                  fg
+                                  bg)]
         (if (= code NCurses.OK)
             (Result.Success (set-bg (set-fg color fg) bg))
             (Result.Error @"Couldn't update color."))))
 
     (defn with-color [attr color]
-      (if @(Grimoire.Color.extended? color)
+      (if extended-colors?
           (attr-set attr (from-int 0) (address (Grimoire.Color.id color)))
           (attr-set attr (from-int (color-pair @(Grimoire.Color.id color))) NULL)))
 
