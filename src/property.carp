@@ -1,0 +1,174 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "color/color.carp")
+
+(defmodule Grimoire
+  (deftype Trait
+    NORMAL
+    ALT
+    BOLD
+    BLINK
+    DIM
+    HORIZONTAL
+    INVISIBLE
+    LEFT
+    LOW
+    PROTECT
+    REVERSE
+    RIGHT
+    STANDOUT
+    TOP
+    UNDERLINE
+    VERTICAL
+    (Complex [Int]))
+  (deftype Property [trait Grimoire.Trait color Grimoire.Color])
+
+  (defmodule Trait
+    (defn = [trait other]
+      (match trait
+        NORMAL (match other NORMAL true _ false)
+        ALT (match other ALT true _ false)
+        BOLD (match other BOLD true _ false)
+        BLINK (match other BLINK true _ false)
+        DIM (match other DIM true _ false)
+        HORIZONTAL (match other HORIZONTAL true _ false)
+        INVISIBLE (match other INVISIBLE true _ false)
+        LEFT (match other LEFT true _ false)
+        LOW (match other LOW true _ false)
+        PROTECT (match other PROTECT true _ false)
+        REVERSE (match other REVERSE true _ false)
+        RIGHT (match other RIGHT true _ false)
+        STANDOUT (match other STANDOUT true _ false)
+        TOP (match other TOP true _ false)
+        UNDERLINE (match other UNDERLINE true _ false)
+        VERTICAL (match other VERTICAL true _ false)
+        (Complex x) (match other (Complex y) (= x y) _ false)))
+    (defn to-attribute [t]
+      (match t
+        (Trait.NORMAL) A_NORMAL
+        (Trait.ALT) A_ALTCHARSET
+        (Trait.BLINK) A_BLINK
+        (Trait.BOLD) A_BOLD
+        (Trait.DIM) A_DIM
+        (Trait.HORIZONTAL) A_HORIZONTAL
+        (Trait.INVISIBLE) A_INVIS
+        (Trait.LEFT) A_LEFT
+        (Trait.LOW) A_LOW
+        (Trait.PROTECT) A_PROTECT
+        (Trait.REVERSE) A_REVERSE
+        (Trait.RIGHT) A_RIGHT
+        (Trait.STANDOUT) A_STANDOUT
+        (Trait.TOP) A_TOP
+        (Trait.UNDERLINE) A_UNDERLINE
+        (Trait.VERTICAL) A_VERTICAL
+        (Complex i) (from-int i)))
+    (sig from-attribute (Fn [Attribute] Grimoire.Trait))
+    (defn from-attribute [a]
+      (case a
+        A_NORMAL (Trait.NORMAL)
+        A_ALTCHARSET (Trait.ALT)
+        A_BLINK (Trait.BLINK)
+        A_BOLD (Trait.BOLD)
+        A_DIM (Trait.DIM)
+        A_HORIZONTAL (Trait.HORIZONTAL)
+        A_INVIS (Trait.INVISIBLE)
+        A_LEFT (Trait.LEFT)
+        A_LOW (Trait.LOW)
+        A_PROTECT (Trait.PROTECT)
+        A_REVERSE (Trait.REVERSE)
+        A_RIGHT (Trait.RIGHT)
+        A_STANDOUT (Trait.STANDOUT)
+        A_TOP (Trait.TOP)
+        A_UNDERLINE (Trait.UNDERLINE)
+        A_VERTICAL (Trait.VERTICAL)
+        (Trait.Complex (to-int a))))
+  )
+
+  (defmodule Property
+    (defn normal [] (Grimoire.Property (Trait.NORMAL) @&default-color))
+
+    (defn alt [] (Grimoire.Property (Trait.ALT) @&default-color))
+
+    (defn blink [] (Grimoire.Property (Trait.BLINK) @&default-color))
+
+    (defn bold [] (Grimoire.Property (Trait.BOLD) @&default-color))
+
+    (defn dim [] (Grimoire.Property (Trait.DIM) @&default-color))
+
+    (defn invis [] (Grimoire.Property (Trait.INVISIBLE) @&default-color))
+
+    (defn reverse [] (Grimoire.Property (Trait.REVERSE) @&default-color))
+
+    (defn standout [] (Grimoire.Property (Trait.STANDOUT) @&default-color))
+
+    (defn underline [] (Grimoire.Property (Trait.UNDERLINE) @&default-color))
+
+    (defn protect [] (Grimoire.Property (Trait.PROTECT) @&default-color))
+
+    (defn horizontal [] (Grimoire.Property (Trait.HORIZONTAL) @&default-color))
+
+    (defn left [] (Grimoire.Property (Trait.LEFT) @&default-color))
+
+    (defn right [] (Grimoire.Property (Trait.RIGHT) @&default-color))
+
+    (defn low [] (Grimoire.Property (Trait.LOW) @&default-color))
+
+    (defn top [] (Grimoire.Property (Trait.TOP) @&default-color))
+
+    (defn vertical [] (Grimoire.Property (Trait.VERTICAL) @&default-color))
+
+    (defn paint [c] (Grimoire.Property (Trait.NORMAL) c))
+
+    (doc get "Get the property currently applied to the standard screen.")
+    (defn get []
+      (let [attr (attr-ptr)
+            pair (Pointer.unsafe-alloc (the Short (from-int 0)))
+            ext  (Pointer.unsafe-alloc 0)
+            ok?  (attr-get attr pair ext)
+            prop (normal)]
+        (do (when (= ok? NCurses.OK)
+                  (do (Property.set-trait! &prop 
+                                           (from-attribute (to-value attr)))
+                      (Property.set-color! &prop (Color.get (to-value ext)))))
+            (Pointer.free attr)
+            (Pointer.free pair)
+            (Pointer.free ext)
+            prop)))
+
+    (doc on "Activate a property on the standard screen.")
+    (defn on [prop]
+      (attr-set (Trait.to-attribute @(Property.trait prop))
+                (from-int 0)
+                (address (Color.id (Property.color prop)))))
+
+    (doc off "Deactivate a property on the standard screen.")
+    (defn off [prop]
+      (let [active       (get)
+            active-attr  (Trait.to-attribute @(Property.trait &active))
+            active-color (Property.color &active)]
+      (do (when (= active-color (Property.color prop))
+                (ignore (attr-set active-attr
+                                 (from-int (color-pair 0))
+                                 (address &0))))
+          (ignore (attr-off (Trait.to-attribute @(Property.trait prop)) NULL)))))
+
+    (doc + "Combine two properties to create a new one.")
+    (sig + (Fn [Grimoire.Property Grimoire.Property] Grimoire.Property))
+    (defn + [x y]
+      (let [x-attr (Trait.to-attribute @(Property.trait &x))
+            y-attr (Trait.to-attribute @(Property.trait &y))
+            x-color @(Property.color &x)
+            y-color @(Property.color &y)
+            new-attr (from-int (bit-or (to-int x-attr) (to-int y-attr)))
+            new-color (+ x-color y-color)]
+        (Grimoire.Property (from-attribute new-attr) new-color)))
+    (implements + +)
+
+    (doc to-attribute 
+      "Converts a Property to an NCurses attribute.")
+    (sig to-attribute (Fn [&Grimoire.Property] Attribute))
+    (defn to-attribute [prop]
+      (let [attr (to-int (Grimoire.Trait.to-attribute @(Property.trait prop)))
+            color-id @(Color.id (Property.color prop))]
+        (from-int (bit-or attr (color-pair color-id)))))
+  )
+)
