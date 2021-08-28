@@ -3,7 +3,8 @@
 
 (defmodule Grimoire
   (defmodule ColorMap
-    (defmacro xterm [] 'xterm-hexmap)
+    (def xterm &xterm-hexmap)
+
     (doc to-hex
       ("Converts a color code to a hex value, according to the provided " false)
       "colormap.")

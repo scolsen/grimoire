@@ -1,0 +1,73 @@
+(defmodule Grimoire
+  (deftype RGB [red Int green Int blue Int])
+
+  (defmodule RGB
+    (doc + 
+      "Adds two RGB colors together to yield a new color."
+      "Pure black, (0,0,0) is the identity element.")
+    (defn + [rgb other]
+      (let [r (clamp 0 255 (+ @(RGB.red &rgb) @(RGB.red &other)))
+            g (clamp 0 255 (+ @(RGB.green &rgb) @(RGB.green &other)))
+            b (clamp 0 255 (+ @(RGB.blue &rgb) @(RGB.blue &other)))]
+        (Grimoire.RGB r g b)))
+    (implements + +)
+
+    (doc to-256
+      "Converts an RGB color to its closest 256 color code.")
+    (defn to-256 [rgb]
+      (let [r @(RGB.red rgb)
+            g @(RGB.green rgb)
+            b @(RGB.blue rgb)]
+      (+ (+ (* (/ (* r 6) 256) 36)
+            (* (/ (* g 6) 256) 6))
+         (/ (* b 6) 256))))
+
+    (doc delta
+      ("Computes the delta, maximum, and minimum " false)
+      "channels of an RGB value.")
+    (sig delta (Fn [&Grimoire.RGB] (Triple Float Float Float)))
+    (defn delta [rgb]
+      (let [r (/ (from-int @(RGB.red rgb)) 255f)
+            g (/ (from-int @(RGB.green rgb)) 255f)
+            b (/ (from-int @(RGB.blue rgb)) 255f)
+            maxchan (max (max r g) b)
+            minchan (min (min r g) b)]
+        (Triple.init (- maxchan minchan) maxchan minchan)))
+
+    (doc hue "Computes the hue of an RGB value.")
+    (sig hue (Fn [&Grimoire.RGB] Int))
+    (defn hue [rgb]
+      (let [r  (/ (from-int @(RGB.red rgb)) 255f)
+            g  (/ (from-int @(RGB.green rgb)) 255f)
+            b  (/ (from-int @(RGB.blue rgb)) 255f)
+            mc @(Triple.b &(delta rgb))
+            d  @(Triple.a &(delta rgb))
+            base (if (= d 0f)
+                     0f
+                     (case mc
+                       r (mod (/ (- g b) d) 6f)
+                       g (+ (/ (- b r) d) 2f)
+                       (+ (/ (- r g) d) 4f)))
+            degree (Float.round (* base 60f))]
+        (if (< degree 0)
+            (+ degree 360)
+            degree)))
+
+    (doc luminosity "Computes the luminosity of an RGB value.")
+    (sig luminosity (Fn [&Grimoire.RGB] Float))
+    (defn luminosity [rgb]
+      (let [maxchan @(Triple.b &(delta rgb))
+            minchan @(Triple.c &(delta rgb))]
+        (/ (+ maxchan minchan) 2f)))
+
+    (doc saturation "Computes the saturation of an RGB value.")
+    (sig saturation (Fn [&Grimoire.RGB] Float))
+    (defn saturation [rgb]
+      (let [l (luminosity rgb)
+            d @(Triple.a &(delta rgb))]
+        (if (= 0f d)
+            0f
+            (/ d (- 1f (abs (- (* 2f l) 1f)))))))
+
+  )
+)

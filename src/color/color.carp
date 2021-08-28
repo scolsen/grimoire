@@ -13,14 +13,15 @@
     "Grimoire handles initializing and managing color pairs.")
   (deftype Color [id Int fg Int bg Int])
 
+  (def default-color (Color.init 0 0 0))
+
   (defmodule Color
     (hidden next-identifier) (hidden max-identifier)
     (hidden compatible-pair)
 
     (hidden init) (hidden set-fg) (hidden set-bg)
     (hidden set-id) (hidden set-fg!) (hidden set-bg!)
-    (hidden set-id!) (hidden fg) (hidden bg)
-    (hidden id) (hidden update-id) (hidden update-fg) (hidden update-bg)
+    (hidden set-id!) (hidden update-id) (hidden update-fg) (hidden update-bg)
 
     (doc new "Initializes a new color.")
     (defn new [fg-code bg-code]
@@ -33,6 +34,12 @@
                   (Result.Success (Grimoire.Color id fg-code bg-code)))
                 (Result.Error @"Failed to initialize color.")))))
 
+    (doc or-default
+      ("Tries to initialize a color. " false)
+      "If it fails, returns the default color.")
+    (defn or-default [fg bg]
+      (from-success (new fg bg) @&Grimoire.default-color))
+
     (doc =
       "Returns true if two colors are equal."
       "Equality is only based on the id field.")
@@ -40,7 +47,7 @@
       (= @(Grimoire.Color.id color) @(Grimoire.Color.id other)))
     (implements = =)
 
-    (hidden get-extended) 
+    (hidden get-extended)
     (defn get-extended [id]
       (let-do [fg*   (Pointer.unsafe-alloc 0)
                bg*   (Pointer.unsafe-alloc 0)
@@ -112,7 +119,7 @@
             (Result.Success (set-bg color bg))
             (Result.Error @"Couldn't update background."))))
 
-    (doc update 
+    (doc update
       ("Updates the foreground and background of a color " false)
       "using the functions f and g, respectively.")
     (defn update [color f g]
@@ -161,5 +168,16 @@
       (list 'do (list 'ignore (list 'with-color 'A_NORMAL color))
                 form
                 (list 'ignore (list 'Grimoire.Color.off))))
+
+    (defn + [color other]
+      (let [color-fg (ColorMap.to-rgb @(Color.fg &color) ColorMap.xterm)
+            color-bg (ColorMap.to-rgb @(Color.bg &color) ColorMap.xterm)
+            other-fg (ColorMap.to-rgb @(Color.fg &other) ColorMap.xterm)
+            other-bg (ColorMap.to-rgb @(Color.bg &other) ColorMap.xterm)
+            blended-fg (+ color-fg other-fg)
+            blended-bg (+ color-bg other-bg)]
+        (from-success (new (to-256 &blended-fg) (to-256 &blended-bg))
+                      @&Grimoire.default-color)))
+    (implements + +)
   )
 )
