@@ -1,0 +1,28 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "Test.carp")
+(load "src/color/color.carp")
+
+(use Test)
+
+(deftest test
+  (assert-equal test 
+    &(Grimoire.Color.init 3 29 29)
+    &(do (ignore (initscr))
+         (ignore (start-color))
+         (let-do [c (Color.or-default 24 24)
+                  o (Color.or-default 25 25)
+                  result (+ c o)]
+           (ignore (endwin))
+           result))
+    "Colors can be added together.")
+  (assert-equal test 
+    &(Grimoire.Color.init 6 22 22)
+    &(do (ignore (initscr))
+         (ignore (start-color))
+         (let-do [c (Color.or-default 0 0)
+                  o (Color.or-default 22 22)
+                  result (+ c o)]
+           (ignore (endwin))
+           result))
+    "The default color is the identity.")
+)
