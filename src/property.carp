@@ -83,6 +83,8 @@
         (Trait.Complex (to-int a))))
   )
 
+  (def default-property (Grimoire.Property (Trait.NORMAL) @&default-color))
+
   (defmodule Property
     (defn normal [] (Grimoire.Property (Trait.NORMAL) @&default-color))
 
@@ -170,5 +172,9 @@
       (let [attr (to-int (Grimoire.Trait.to-attribute @(Property.trait prop)))
             color-id @(Color.id (Property.color prop))]
         (from-int (bit-or attr (color-pair color-id)))))
+
+    (defn apply [char property]
+      (NCurses.Chtype.from-int
+        (bit-or (to-int char) (to-int (Grimoire.Property.to-attribute property)))))
   )
 )
