@@ -1,0 +1,36 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(load "src/component.carp")
+(load "src/property.carp")
+
+(defmodule Grimoire
+  (defmodule Component
+    (doc add-char
+      "Adds a character to the given view.")
+    (defmacro add-char [view char :rest property]
+      (if (empty? property)
+        (let [p (list 'Grimoire.Property.apply char '&Grimoire.default-property)]
+          (list 'NCurses.waddch (Grimoire.Component.win* view) p))
+        (let [p (list 'Grimoire.Property.apply char (car property))]
+          (list 'NCurses.waddch (Grimoire.Component.win* view) p))))
+
+    (doc move-add-char
+       ("Moves the cursor to a designated x and y position then adds " false)
+       "a character to the given view.")
+    (defmacro move-add-char [view x y char :rest property]
+      (if (empty? property)
+        (let [p (list 'Grimoire.Property.apply char '&Grimoire.default-property)]
+          (list 'NCurses.mvwaddch (Grimoire.Component.win* view) y x p))
+        (let [p (list 'Grimoire.Property.apply char (car property))]
+          (list 'NCurses.mvwaddch (Grimoire.Component.win* view) y x p))))
+
+    (doc echo-char
+      "Adds a character to a view then immediately refreshes the view.")
+    (defmacro echo-char [view char :rest property]
+      (if (empty? property)
+        (let [p (list 'Grimoire.Property.apply char '&Grimoire.default-property)]
+          (list 'NCurses.wechochar (Grimoire.Component.win* view) p))
+        (let [p (list 'Grimoire.Property.apply char (car property))]
+          (list 'NCurses.wechochar (Grimoire.Component.win* view) p))))
+  )
+)

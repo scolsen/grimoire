@@ -1,0 +1,47 @@
+(load "component.carp")
+
+(defmodule Grimoire
+  (defmodule Component
+    (doc add-str
+      "Adds a string to the given view."
+      ("If the rest argument is provided, only takes limit characters " false)
+      "of the string.")
+    (defmacro add-str [view string :rest limit]
+      (if (empty? limit)
+          (list 'NCurses.waddstr (Grimoire.Component.win* view) string)
+          (list 'NCurses.waddnstr (Grimoire.Component.win* view)
+                                  string
+                                  (car limit))))
+
+    (doc move-add-str
+      ("Moves the cursor to the given x and y position, then adds a " false)
+      "string to the given view."
+      ("If the rest argument is provided, only takes limit characters " false)
+      "of the string.")
+    (defmacro move-add-str [view x y string :rest limit]
+      (if (empty? limit)
+          (list 'NCurses.mvwaddstr (Grimoire.Component.win* view) y x string)
+          (list 'NCurses.mvwaddnstr (Grimoire.Component.win* view)
+                                    y
+                                    x
+                                    string
+                                    (car limit))))
+    (doc add-strln
+      "Adds a string to the given view, appending a newline.")
+    (defmacro add-strln [view string]
+      (list 'add-str view (list 'String.concat (list 'ref [string '@"\n"]))))
+
+    (doc add-str*
+      "Adds an arbitrary number of strings to the given view.")
+    (defmacro add-str* [view :rest strs]
+      (cons-last (cons-last (build-str* strs) (list 'copy))
+                 (list 'add-str view)))
+
+    (doc add-strln*
+      ("Adds an arbitrary number of strings to the given view, " false)
+      "appending a newline.")
+    (defmacro add-strln* [view :rest strs]
+      (let [string (cons-last (build-str* strs) (list 'copy))]
+        (list 'Grimoire.addstrln view string)))
+  )
+)

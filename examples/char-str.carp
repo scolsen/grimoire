@@ -1,0 +1,18 @@
+(load "src/ch.carp")
+(load "src/str.carp")
+(load "grimoire.carp")
+
+(grim-do
+  (do (Grimoire.Color.start)
+    (let-do [frame (Grimoire.Components.Frame.new 40 40 2 2 @"" true)
+             col   (Grimoire.Color.or-default 24 255)
+             prop (Grimoire.Property.init (Trait.BOLD) col)]
+      (ignore (Grimoire.Component.render &frame))
+      (ignore (Grimoire.Component.add-char &frame \a &prop))
+      (ignore (Grimoire.Component.get-input &frame))
+      (ignore (Grimoire.Component.render &frame)))
+    (ignore (Grimoire.Component.add-char &Grimoire.stdscr \b))
+    (ignore (Grimoire.Component.add-str &Grimoire.stdscr @"example"))
+    (ignore (Grimoire.Component.render &Grimoire.stdscr))
+    (ignore (Grimoire.Component.get-input &Grimoire.stdscr)))
+)
