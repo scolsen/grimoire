@@ -100,5 +100,8 @@
   (doc act "")
   (defn act [char view]
     (~(Grimoire.Component.behavior view) char view))
+
+    (defndynamic win* [view]
+      (list 'copy (list 'Grimoire.Component.window view)))
   )
 )
