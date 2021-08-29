@@ -6,14 +6,18 @@
 (load "src/components/text-frame.carp")
 
 (defmodule Grimoire
+
+  (def stdscr (component STDSCR 0 0 0 0 0))
+
   (defn start []
-    (Wide.initscr))
+    (let-do [scr (Wide.initscr)]
+      (Component.set-window! &Grimoire.stdscr scr)))
 
   (defn end []
     (endwin))
 )
 
-(doc grim-do 
+(doc grim-do
   "A macro for defining a program that uses grimoire facilities."
   "Takes care of starting and stopping ncurses for you :)")
 (defmacro grim-do [forms]
