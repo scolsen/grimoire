@@ -23,6 +23,9 @@
     (hidden set-id) (hidden set-fg!) (hidden set-bg!)
     (hidden set-id!) (hidden update-id) (hidden update-fg) (hidden update-bg)
 
+    (defn start []
+      (do (ignore (start-color))))
+
     (doc new "Initializes a new color.")
     (defn new [fg-code bg-code]
       (if (> (inc next-identifier) (max-identifier))
