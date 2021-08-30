@@ -1,0 +1,15 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+
+(defmodule Grimoire
+  (defmodule InputOptions
+    (def echo? true)
+
+    (defn echo-on []
+      (do (ignore (echo))
+          (set! echo? true)))
+
+    (defn echo-off []
+      (do (ignore (noecho))
+          (set! echo? false)))
+  )
+)
