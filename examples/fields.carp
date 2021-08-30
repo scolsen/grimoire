@@ -1,0 +1,27 @@
+(load "../src/components/field.carp")
+(load "../src/components/input-field.carp")
+(load "../src/components/validated-input.carp")
+(load "../src/str.carp")
+(load "../grimoire.carp")
+(load "../src/input-options.carp")
+(load "Pattern.carp")
+
+(grim-do
+  (let-do [field (Grimoire.Components.Field.new 20 10 10 @"")
+           input (Grimoire.Components.InputField.new 20 10 15 @"input here")
+           valid (Grimoire.Components.ValidatedInputField.new 20 10 20 @"email
+           please" (Pattern.init "@"))]
+    (ignore (echo-off))
+    (ignore (Grimoire.Component.move-add-str &Grimoire.stdscr 10 9 
+                                             @"Basic field"))
+    (ignore (Grimoire.Component.move-add-str &Grimoire.stdscr 10 14 
+                                             @"Input field"))
+    (ignore (Grimoire.Component.move-add-str &Grimoire.stdscr 10 19 
+                                             @"Validated Input field"))
+    (Grimoire.Component.render &Grimoire.stdscr)
+    (Grimoire.Component.render &field)
+    (Grimoire.Component.render &input)
+    (Grimoire.Component.render &valid)
+    (Grimoire.Component.listen &input)
+    (Grimoire.Component.listen &valid))
+)

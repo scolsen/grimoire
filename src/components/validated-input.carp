@@ -1,0 +1,55 @@
+(load "../color/color.carp")
+(load "../component.carp")
+
+(load "Pattern.carp")
+
+(use Pattern)
+
+(defmodule Grimoire
+  (defmodule Components
+    (defmodule ValidatedInputField
+
+    (defn draw-text [window data]
+        ;; no need to return the subwindow. It shares memory with window.
+        (let-do [w (derwin window (- (wgetmaxy window) 2) 
+                                  (- (wgetmaxx window) 2)
+                                  1 1)]
+          (ignore (mvwaddstr w 0 0 @(Pair.a data)))
+          (ignore (touchwin window))))
+
+      (defn validate [_ view]
+        (let-do [s (cstr &(zero))
+                 win @(Grimoire.Component.window view)
+                 previous-echo Grimoire.InputOptions.echo?
+                 dat (the (Ref (Pair String Pattern)) (Grimoire.Component.data view))]
+          (ignore (echo))
+          (ignore (wmove win 1 1))
+          (ignore (wclrtoeol win))
+          (ignore (mvwgetstr win 1 1 s))
+          (ignore (wmove win 1 1))
+          (ignore (wclrtoeol win))
+          (if (not (= (Pattern.find (Pair.b dat) &(from-cstr s)) -1))
+            (do (Component.set-data! view (Pair.set-a @dat (from-cstr s)))
+              (ignore (wattr-on win (from-int (color-pair (to-int COLOR_GREEN))) NULL))
+              (Component.set-style! view @(Component.style view))
+              (ignore (wattr-off win (from-int (color-pair (to-int COLOR_GREEN))) NULL)))
+            (do (ignore (wattr-on win (from-int (color-pair (to-int COLOR_RED))) NULL))
+                (Component.set-style! view @(Component.style view))
+                (ignore (wattr-off win (from-int (color-pair (to-int COLOR_RED))) NULL))))
+          (when (not previous-echo) (ignore (Grimoire.InputOptions.echo-off)))))
+
+      (defn new [width x y data pattern]
+        (let-do [view (Grimoire.component ValidatedField width 3 x y (Pair.init
+        data pattern))
+                 style (=> (Grimoire.Style.new)
+                           (Style.set-top-left (tl-heavy A_NORMAL))
+                           (Style.set-top-right (tr-heavy A_NORMAL))
+                           (Style.set-bottom-left (bl-heavy A_NORMAL))
+                           (Style.set-bottom-right (br-heavy A_NORMAL)))]
+          (Grimoire.Style.set &view &style)
+          (Component.set-draw! &view draw-text)
+          (Grimoire.Component.set-behavior! &view validate)
+          view))
+    )
+  )
+)

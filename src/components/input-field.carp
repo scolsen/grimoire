@@ -1,0 +1,30 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "../input-options.carp")
+(load "../box-drawing.carp")
+(load "../component.carp")
+;(load "../drawing.carp")
+(load "field.carp")
+
+(defmodule Grimoire
+  (defmodule Components
+    (defmodule InputField
+      (defn input-field-behavior [_ view]
+        (let-do [s (cstr &(zero))
+                 win @(Grimoire.Component.window view)
+                 previous-echo Grimoire.InputOptions.echo?]
+          (ignore (echo))
+          (ignore (wmove win 1 1))
+          (ignore (wclrtoeol win))
+          (ignore (mvwgetstr win 1 1 s))
+          (ignore (wmove win 1 1))
+          (ignore (wclrtoeol win))
+          (when (not previous-echo) (ignore (Grimoire.InputOptions.echo-off)))
+          (Component.set-data! view (from-cstr s))))
+
+      (defn new [width x y default]
+        (let-do [view (Grimoire.Components.Field.new width x y default)]
+          (Component.set-behavior! &view input-field-behavior)
+          view))
+    )
+  )
+)

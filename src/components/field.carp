@@ -1,0 +1,29 @@
+(load "git@github.com:scolsen/carp-ncurses@master")
+(load "../box-drawing.carp")
+(load "../component.carp")
+;(load "../drawing.carp")
+
+(defmodule Grimoire
+  (defmodule Components
+    (defmodule Field
+      (defn draw-text [window data]
+        ;; no need to return the subwindow. It shares memory with window.
+        (let-do [w (derwin window (- (wgetmaxy window) 2) 
+                                  (- (wgetmaxx window) 2)
+                                  1 1)]
+          (ignore (mvwaddstr w 0 0 @data))
+          (ignore (touchwin window))))
+
+      (defn new [width x y data]
+        (let-do [view (Grimoire.component Field width 3 x y data)
+                 style (=> (Grimoire.Style.new)
+                           (Style.set-top-left (tl-heavy A_NORMAL))
+                           (Style.set-top-right (tr-heavy A_NORMAL))
+                           (Style.set-bottom-left (bl-heavy A_NORMAL))
+                           (Style.set-bottom-right (br-heavy A_NORMAL)))]
+          (Grimoire.Style.set &view &style)
+          (Component.set-draw! &view draw-text)
+          view))
+    )
+  )
+)
